@@ -1,13 +1,18 @@
 import math
+import os
+import sys
+import winsound
+
+
 # ---------------------------- CONSTANTS ------------------------------- #
 PINK = "#e2979c"
 RED = "#e7305b"
 GREEN = "#9bdeac"
 YELLOW = "#f7f5dd"
 FONT_NAME = "Courier"
-WORK_MIN = 25
-SHORT_BREAK_MIN = 5
-LONG_BREAK_MIN = 15
+WORK_MIN = 0.5
+SHORT_BREAK_MIN = 0.1
+LONG_BREAK_MIN = 1
 reps = 0
 timer_id = None
 
@@ -19,14 +24,32 @@ window.title("Pomodoro")
 window.config(padx=100, pady=50, bg=YELLOW)
 
 canvas = Canvas(width=200, height=224, bg=YELLOW, highlightthickness=0)
-tomato_img = PhotoImage(file="tomato.png")
+if getattr(sys, 'frozen', False):  # If bundled by PyInstaller
+    base_path = sys._MEIPASS
+else:
+    base_path = os.path.abspath(".")
+
+image_path = os.path.join(base_path, "tomato.png")
+tomato_img = PhotoImage(file=image_path)
 canvas.create_image(100, 112, image=tomato_img)
 timer_text = canvas.create_text(100, 130, text="00:00", fill="white", font=(FONT_NAME, 35, "bold"))
 canvas.grid(row=1, column=1)
 
+
+# -------------------------------RAISE WINDOW-------------------------------#
+def raise_above_all(window):
+    window.lift()  # Bring to front
+    window.attributes('-topmost', True)  # Stay on top
+    window.after(100, lambda: window.attributes('-topmost', False))  # Remove topmost shortly after
+
+
 # ---------------------------- TIMER RESET ------------------------------- # 
 def reset_timer():
     global reps
+
+    start_button.config(state="normal")
+    resest_button.config(state="disabled")
+
     window.after_cancel(timer_id)
     canvas.itemconfig(timer_text, text="00:00")
     title_label.config(text="Timer")
@@ -36,6 +59,10 @@ def reset_timer():
 # ---------------------------- TIMER MECHANISM ------------------------------- # 
 def start_timer():
     global reps
+    
+    start_button.config(state="disabled")
+    resest_button.config(state="normal")
+
     reps  = reps + 1
     work_sec = WORK_MIN * 60
     short_break_secs = SHORT_BREAK_MIN * 60
@@ -59,7 +86,7 @@ def start_timer():
 def count_down(count):
     global timer_id
     minutes = math.floor(count / 60)
-    seconds = count % 60
+    seconds = math.floor(count % 60)
 
     if minutes <= 9:
         minutes = f"0{minutes}"
@@ -73,6 +100,8 @@ def count_down(count):
     else:
         sessions_count = reps // 2
         check_marks.config(text=sessions_count * "✔️")
+        winsound.MessageBeep(type=winsound.MB_OK)
+        raise_above_all(window)
         start_timer()
 
 # ---------------------------- UI SETUP ------------------------------- #
