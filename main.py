@@ -10,9 +10,9 @@ RED = "#e7305b"
 GREEN = "#9bdeac"
 YELLOW = "#f7f5dd"
 FONT_NAME = "Courier"
-WORK_MIN = 0.5
-SHORT_BREAK_MIN = 0.1
-LONG_BREAK_MIN = 1
+WORK_MIN = 25
+SHORT_BREAK_MIN = 5
+LONG_BREAK_MIN = 15
 reps = 0
 timer_id = None
 
@@ -38,9 +38,41 @@ canvas.grid(row=1, column=1)
 
 # -------------------------------RAISE WINDOW-------------------------------#
 def raise_above_all(window):
-    window.lift()  # Bring to front
-    window.attributes('-topmost', True)  # Stay on top
-    window.after(100, lambda: window.attributes('-topmost', False))  # Remove topmost shortly after
+    """Enhanced function to bring window to front even if minimized"""
+    try:
+        # Restore the window if it's minimized
+        window.state('normal')
+        
+        # Bring to front
+        window.lift()
+        
+        # Make it the topmost window temporarily
+        window.attributes('-topmost', True)
+        
+        # Focus on the window
+        window.focus_force()
+        
+        # Flash the window to draw attention (Windows specific)
+        if sys.platform.startswith('win'):
+            try:
+                import ctypes
+                from ctypes import wintypes
+                
+                # Get the window handle
+                hwnd = ctypes.windll.user32.FindWindowW(None, window.title())
+                if hwnd:
+                    # Flash the window
+                    ctypes.windll.user32.FlashWindow(hwnd, True)
+                    # Bring to foreground
+                    ctypes.windll.user32.SetForegroundWindow(hwnd)
+            except:
+                pass  # If ctypes fails, continue with basic method
+        
+        # Remove topmost after a short delay
+        window.after(100, lambda: window.attributes('-topmost', False))
+        
+    except Exception as e:
+        print(f"Error bringing window to front: {e}")
 
 
 # ---------------------------- TIMER RESET ------------------------------- # 
